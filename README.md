@@ -32,11 +32,16 @@ workload (CI uses `dotnet workload install ios --version 10.0.401` with Xcode 26
 iPhone connected to the Mac:
 
 ```sh
-dotnet build MobileCap.iOS -t:Run -f net10.0-ios -p:RuntimeIdentifier=ios-arm64
+dotnet build MobileCap.iOS -f net10.0-ios -r ios-arm64
+dotnet build MobileCap.iOS -t:Run -f net10.0-ios -r ios-arm64
 ```
 
-Signing uses your Apple developer account's automatic provisioning; set
-`CodesignKey` and `CodesignProvision` if Xcode can't pick them.
+The `Run` target does not build first, so the two steps are separate.
+
+A device build needs a provisioning profile for `io.github.meowcat285.mobilecap`. The simplest
+way to get one is to create an empty iOS app in Xcode with that bundle identifier, let Xcode
+manage signing for your team, and run it on the phone once. After that the .NET build finds the
+profile on its own; set `CodesignKey` and `CodesignProvision` if it picks the wrong one.
 
 Android needs the Android workload (`dotnet workload install android`) and a JDK.
 
