@@ -7,6 +7,9 @@ namespace MobileCap.Views;
 
 public partial class CaptureView : ContentPage
 {
+    // An edge swipe or Android back would skip Finish and lose the capture; only Finish leaves.
+    private bool _canLeave;
+
     public CaptureView()
     {
         InitializeComponent();
@@ -29,6 +32,11 @@ public partial class CaptureView : ContentPage
 
     protected override void OnNavigatingFrom(NavigatingFromEventArgs e)
     {
+        if (!_canLeave)
+        {
+            e.Cancel = true;
+            return;
+        }
         ArHost.IsVisible = false;
         base.OnNavigatingFrom(e);
     }
@@ -52,6 +60,7 @@ public partial class CaptureView : ContentPage
         {
             Failed?.Invoke(this, ex);
         }
+        _canLeave = true;
         if (Navigation is not null) await Navigation.PopAsync();
     }
 }
