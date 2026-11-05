@@ -33,10 +33,11 @@ iPhone connected to the Mac:
 
 ```sh
 dotnet build MobileCap.iOS -f net10.0-ios -r ios-arm64
-dotnet build MobileCap.iOS -t:Run -f net10.0-ios -r ios-arm64
+xcrun xctrace list devices   # the phone's UDID is in brackets after its name
+dotnet build MobileCap.iOS -t:Run -f net10.0-ios -r ios-arm64 -p:_DeviceName=<UDID>
 ```
 
-The `Run` target does not build first, so the two steps are separate.
+The `Run` target does not build first, so the build is a separate step.
 
 A device build needs a provisioning profile for `io.github.meowcat285.mobilecap`. The simplest
 way to get one is to create an empty iOS app in Xcode with that bundle identifier, let Xcode
