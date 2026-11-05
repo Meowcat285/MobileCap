@@ -52,6 +52,11 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
-      - run: xcodebuild -version
+      # The current iOS workload needs the newest Xcode, which is not the runner's default.
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode_*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          xcodebuild -version
       - run: dotnet workload restore MobileCap.iOS/MobileCap.iOS.csproj
       - run: dotnet build MobileCap.iOS -c Debug -r iossimulator-arm64
