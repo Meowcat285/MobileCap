@@ -16,6 +16,6 @@ public partial class MainView : NavigationPage
         base.OnAttachedToVisualTree(e);
 
         if (CurrentPage == null)
-            await PushAsync(new CapturesView { DataContext = new CapturesViewModel(new SettingsViewModel()) });
+            await PushAsync(new CapturesView { DataContext = new CapturesViewModel(new SettingsViewModel(), App.Ar) });
     }
 }

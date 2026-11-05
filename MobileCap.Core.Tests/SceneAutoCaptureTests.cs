@@ -25,12 +25,13 @@ public class SceneAutoCaptureTests
         return advice;
     }
 
-    private StillResult Still(Vector3 at, int scene, int smear = 0)
+    private StillResult Still(Vector3 at, int scene, int smear = 0, double? predicted = null)
     {
         var pixels = TestImages.Blocks(W, H, 40, scene);
         if (smear > 0) pixels = TestImages.SmearX(pixels, W, H, smear);
         var frame = TestImages.Frame(_clock, TestImages.Pose(at));
-        return _capture.OnStill(new CapturedStill(frame, W, H, pixels, new byte[] { (byte)scene, (byte)smear }), Now);
+        return _capture.OnStill(new CapturedStill(frame, W, H, pixels, new byte[] { (byte)scene, (byte)smear }), Now,
+            predictedBlurPx: predicted);
     }
 
     [Fact]
@@ -47,8 +48,9 @@ public class SceneAutoCaptureTests
     [Fact]
     public void Fires_when_still_and_away_from_every_kept_shot()
     {
-        Assert.True(HoldStill(Vector3.Zero).Fire);
-        var kept = Assert.Single(Still(Vector3.Zero, scene: 1).Kept);
+        var fired = HoldStill(Vector3.Zero);
+        Assert.True(fired.Fire);
+        var kept = Assert.Single(Still(Vector3.Zero, scene: 1, predicted: fired.PredictedBlurPx).Kept);
 
         Assert.Equal(HoldReason.TooClose, HoldStill(new Vector3(0.1f, 0, 0)).Hold);
         Assert.True(HoldStill(new Vector3(0.4f, 0, 0)).Fire);

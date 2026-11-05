@@ -11,6 +11,30 @@ public partial class CapturesView : ContentPage
         InitializeComponent();
     }
 
+    private async void NewCaptureButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (Navigation is null || DataContext is not CapturesViewModel vm) return;
+        CaptureViewModel capture;
+        try
+        {
+            capture = vm.NewCapture();
+        }
+        catch (Exception ex)
+        {
+            vm.Message = "Could not start a capture: " + ex.Message;
+            return;
+        }
+        var page = new CaptureView { DataContext = capture };
+        page.Finished += (_, record) =>
+        {
+            vm.Message = record.Shots.Count == 0
+                ? "Nothing was captured."
+                : $"Saved {record.Name}: {record.Shots.Count} photos, {record.Gaps.Count} gap warnings.";
+            vm.Refresh();
+        };
+        await Navigation.PushAsync(page);
+    }
+
     private async void SettingsButton_Click(object? sender, RoutedEventArgs e)
     {
         if (Navigation is not null && DataContext is CapturesViewModel vm)

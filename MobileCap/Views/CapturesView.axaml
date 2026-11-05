@@ -9,9 +9,14 @@
              x:Class="MobileCap.Views.CapturesView">
     <DockPanel Margin="16">
         <StackPanel DockPanel.Dock="Bottom" Spacing="8">
+            <TextBlock IsVisible="{Binding Message, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       TextWrapping="Wrap"
+                       Opacity="0.7"
+                       Text="{Binding Message}" />
             <Button HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    IsEnabled="False"
+                    IsEnabled="{Binding CanCapture}"
+                    Click="NewCaptureButton_Click"
                     Content="New capture" />
             <Button HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"

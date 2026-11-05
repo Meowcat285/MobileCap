@@ -32,6 +32,7 @@ public sealed record StillResult(ShotJudgement Judgement, IReadOnlyList<KeptShot
 /// gate, and the phone is far from every kept shot. A blurry still is retried at the same spot;
 /// after <see cref="CaptureSettings.MaxTries"/> the sharpest is kept and flagged, as it is when
 /// the phone leaves the spot first.
+/// Not thread-safe: <see cref="CaptureController"/> serializes the AR callback and still completions.
 /// </summary>
 public sealed class SceneAutoCapture
 {
@@ -43,7 +44,6 @@ public sealed class SceneAutoCapture
     private readonly List<GapWarning> _gaps = [];
     private readonly List<Attempt> _tries = [];
     private CameraPose? _duplicateAt;
-    private double? _predictedAtFire;
 
     /// <param name="stillWidth">The size the platform's stills come out at, for the blur prediction.</param>
     public SceneAutoCapture(CaptureSettings settings, int stillWidth, int stillHeight)
@@ -73,20 +73,20 @@ public sealed class SceneAutoCapture
         if (!Spacing.IsFarFromEveryShot(pose) || (_duplicateAt is { } dup && !Spacing.IsApart(dup, pose)))
             return new FrameAdvice(false, HoldReason.TooClose, predicted);
 
-        _predictedAtFire = predicted;
         return new FrameAdvice(true, HoldReason.None, predicted);
     }
 
     /// <summary>Also takes manual-shutter stills, which skip the motion and spacing checks.</summary>
-    public StillResult OnStill(CapturedStill still, DateTimeOffset takenAt, GeoLocation? location = null)
+    /// <param name="predictedBlurPx">From the <see cref="OnFrame"/> that fired this still; null for the shutter.</param>
+    public StillResult OnStill(CapturedStill still, DateTimeOffset takenAt, GeoLocation? location = null,
+        double? predictedBlurPx = null)
     {
         var pose = CameraPose.FromCameraToWorld(still.Frame.CameraToWorld);
         var kept = new List<KeptShot>();
         if (_tries.Count > 0 && Spacing.IsApart(_tries[0].Pose, pose)) kept.Add(CloseTries());
 
         var judgement = _judge.Judge(still.Pixels.Span, still.Width, still.Height);
-        var attempt = new Attempt(still, judgement, takenAt, location, _predictedAtFire);
-        _predictedAtFire = null;
+        var attempt = new Attempt(still, judgement, takenAt, location, predictedBlurPx);
 
         switch (judgement.Verdict)
         {
