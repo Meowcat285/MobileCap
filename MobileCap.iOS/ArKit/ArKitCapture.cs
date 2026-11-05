@@ -196,6 +196,10 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
         // ARKit stalls once a few frames are retained, so each one is disposed in OnFrame.
         public override void DidUpdateFrame(ARSession session, ARFrame frame) => owner.OnFrame(frame);
 
+        // A denied camera permission ends up here with no frame ever arriving.
+        public override void DidFail(ARSession session, NSError error) =>
+            owner._firstFrame.TrySetException(new InvalidOperationException(error.LocalizedDescription));
+
         // Keeps the world, and so the marker trail and the poses, continuous after an interruption.
         public override bool ShouldAttemptRelocalization(ARSession session) => true;
     }

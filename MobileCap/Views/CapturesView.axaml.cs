@@ -6,6 +6,8 @@ namespace MobileCap.Views;
 
 public partial class CapturesView : ContentPage
 {
+    private bool _opening;
+
     public CapturesView()
     {
         InitializeComponent();
@@ -13,7 +15,20 @@ public partial class CapturesView : ContentPage
 
     private async void NewCaptureButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (Navigation is null || DataContext is not CapturesViewModel vm) return;
+        if (_opening || Navigation is null || DataContext is not CapturesViewModel vm) return;
+        _opening = true;
+        try
+        {
+            await OpenCaptureAsync(Navigation, vm);
+        }
+        finally
+        {
+            _opening = false;
+        }
+    }
+
+    private static async Task OpenCaptureAsync(INavigation navigation, CapturesViewModel vm)
+    {
         CaptureViewModel capture;
         try
         {
@@ -32,7 +47,12 @@ public partial class CapturesView : ContentPage
                 : $"Saved {record.Name}: {record.Shots.Count} photos, {record.Gaps.Count} gap warnings.";
             vm.Refresh();
         };
-        await Navigation.PushAsync(page);
+        page.Failed += (_, ex) =>
+        {
+            vm.Message = "Saving the capture failed: " + ex.Message;
+            vm.Refresh();
+        };
+        await navigation.PushAsync(page);
     }
 
     private async void SettingsButton_Click(object? sender, RoutedEventArgs e)

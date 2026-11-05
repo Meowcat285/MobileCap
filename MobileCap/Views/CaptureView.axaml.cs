@@ -16,6 +16,9 @@ public partial class CaptureView : ContentPage
     /// <summary>Set once the capture is saved, before the page is popped.</summary>
     public event EventHandler<CaptureRecord>? Finished;
 
+    /// <summary>Saving failed; the photos already written stay in the folder.</summary>
+    public event EventHandler<Exception>? Failed;
+
     protected override async void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
@@ -27,8 +30,14 @@ public partial class CaptureView : ContentPage
     private async void FinishButton_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not CaptureViewModel vm || vm.IsFinishing) return;
-        var record = await vm.FinishAsync();
-        Finished?.Invoke(this, record);
+        try
+        {
+            Finished?.Invoke(this, await vm.FinishAsync());
+        }
+        catch (Exception ex)
+        {
+            Failed?.Invoke(this, ex);
+        }
         if (Navigation is not null) await Navigation.PopAsync();
     }
 }
