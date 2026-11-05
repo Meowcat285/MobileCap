@@ -13,7 +13,7 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
 {
     private readonly IArCapture _ar;
     private readonly CaptureController _controller;
-    private bool _started;
+    private bool _started, _stopped;
 
     public CaptureViewModel(IArPlatform platform, CaptureFolder folder, CaptureSettings settings, DateTimeOffset startedAt)
     {
@@ -23,6 +23,7 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
         _controller.StatusChanged += (_, s) => Dispatcher.UIThread.Post(() => Show(s));
         _controller.ShotKept += (_, k) => Dispatcher.UIThread.Post(() => Kept(k));
         _controller.StillFailed += (_, e) => Dispatcher.UIThread.Post(() => Warning = "Photo failed: " + e.Message);
+        _ar.Session.Failed += (_, e) => Dispatcher.UIThread.Post(() => Stopped("AR stopped: " + e.Message));
         Show(_controller.Status);
     }
 
@@ -73,7 +74,8 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
         }
         catch (Exception e)
         {
-            Hint = "AR could not start: " + e.Message;
+            Stopped("AR could not start: " + e.Message);
+            await _ar.DisposeAsync();
         }
     }
 
@@ -102,9 +104,17 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>AR is gone; Finish still saves whatever was kept.</summary>
+    private void Stopped(string why)
+    {
+        _stopped = true;
+        Hint = why;
+        CanShoot = false;
+    }
+
     private void Show(CaptureStatus s)
     {
-        if (IsFinishing) return;
+        if (IsFinishing || _stopped) return;
         Hint = HintFor(s);
         Counts = s.Gaps == 0 ? Photos(s.Shots) : $"{Photos(s.Shots)} · {s.Gaps} {(s.Gaps == 1 ? "gap" : "gaps")}";
         Blur = s.PredictedBlurPx is { } px ? $"motion {px:0.0} px" : "";

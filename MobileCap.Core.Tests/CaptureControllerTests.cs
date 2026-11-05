@@ -157,6 +157,8 @@ public sealed class CaptureControllerTests : IAsyncDisposable
     {
         public event EventHandler<ArFrame>? FrameUpdated;
 
+        public event EventHandler<Exception>? Failed { add { } remove { } }
+
         public ArFrame? Latest { get; private set; }
 
         public bool Stopped { get; private set; }

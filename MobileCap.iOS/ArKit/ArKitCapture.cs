@@ -33,6 +33,7 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
     private readonly LocationWatcher? _location;
     private readonly TaskCompletionSource _firstFrame = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Task<StillFormat>? _format;
+    private int _disposed;
 
     public ArKitCapture(CaptureSettings settings)
     {
@@ -49,6 +50,8 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
     }
 
     public event EventHandler<ArFrame>? FrameUpdated;
+
+    public event EventHandler<Exception>? Failed;
 
     public IArSession Session => this;
 
@@ -75,7 +78,7 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
 
     public Task StopAsync()
     {
-        _session.Pause();
+        if (Volatile.Read(ref _disposed) == 0) _session.Pause();
         return Task.CompletedTask;
     }
 
@@ -90,6 +93,7 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
 
     public ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return ValueTask.CompletedTask;
         _session.Pause();
         _session.Delegate = null!;
         _location?.Dispose();
@@ -197,8 +201,12 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
         public override void DidUpdateFrame(ARSession session, ARFrame frame) => owner.OnFrame(frame);
 
         // A denied camera permission ends up here with no frame ever arriving.
-        public override void DidFail(ARSession session, NSError error) =>
-            owner._firstFrame.TrySetException(new InvalidOperationException(error.LocalizedDescription));
+        public override void DidFail(ARSession session, NSError error)
+        {
+            var failure = new InvalidOperationException(error.LocalizedDescription);
+            owner._firstFrame.TrySetException(failure);
+            owner.Failed?.Invoke(owner, failure);
+        }
 
         // Keeps the world, and so the marker trail and the poses, continuous after an interruption.
         public override bool ShouldAttemptRelocalization(ARSession session) => true;

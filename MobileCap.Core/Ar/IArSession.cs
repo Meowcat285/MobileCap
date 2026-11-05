@@ -9,6 +9,9 @@ public interface IArSession : IAsyncDisposable
 {
     event EventHandler<ArFrame>? FrameUpdated;
 
+    /// <summary>The tracker stopped for good, at start or later; no more frames will come.</summary>
+    event EventHandler<Exception>? Failed;
+
     Task StartAsync(CancellationToken cancellationToken = default);
 
     Task StopAsync();
