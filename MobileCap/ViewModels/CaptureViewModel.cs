@@ -72,10 +72,14 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
         {
             await _controller.StartAsync();
         }
-        catch (Exception e)
+        catch (Exception e) when (!IsFinishing)
         {
             Stopped("AR could not start: " + e.Message);
             await _ar.DisposeAsync();
+        }
+        catch (Exception)
+        {
+            // Finish cancelled the start and is cleaning up.
         }
     }
 
@@ -114,9 +118,10 @@ public partial class CaptureViewModel : ViewModelBase, IAsyncDisposable
 
     private void Show(CaptureStatus s)
     {
-        if (IsFinishing || _stopped) return;
-        Hint = HintFor(s);
+        if (IsFinishing) return;
         Counts = s.Gaps == 0 ? Photos(s.Shots) : $"{Photos(s.Shots)} · {s.Gaps} {(s.Gaps == 1 ? "gap" : "gaps")}";
+        if (_stopped) return;
+        Hint = HintFor(s);
         Blur = s.PredictedBlurPx is { } px ? $"motion {px:0.0} px" : "";
         CanShoot = s.Ready && !s.Busy;
     }

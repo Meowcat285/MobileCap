@@ -153,6 +153,36 @@ public sealed class CaptureControllerTests : IAsyncDisposable
         Assert.True(_controller.Shutter());
     }
 
+    [Fact]
+    public async Task A_shot_whose_image_cannot_be_written_stays_out_of_the_sidecars()
+    {
+        await _controller.StartAsync(TestContext.Current.CancellationToken);
+        Exception? failure = null;
+        _controller.StillFailed += (_, e) => failure = e;
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(Path.Combine(_root, "images"), "a file where the images folder goes");
+
+        Assert.True(_controller.Shutter());
+        await _stills.Idle(_controller);
+        var record = await _controller.FinishAsync();
+
+        Assert.IsAssignableFrom<IOException>(failure);
+        Assert.Empty(record.Shots);
+    }
+
+    [Fact]
+    public async Task Finish_while_starting_cancels_the_start()
+    {
+        _stills.NeverReady = true;
+        var starting = _controller.StartAsync(TestContext.Current.CancellationToken);
+
+        var record = await _controller.FinishAsync();
+
+        Assert.Empty(record.Shots);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => starting);
+        Assert.False(_controller.Status.Ready);
+    }
+
     private sealed class FakeAr : IArSession
     {
         public event EventHandler<ArFrame>? FrameUpdated;
@@ -190,6 +220,9 @@ public sealed class CaptureControllerTests : IAsyncDisposable
 
         public bool FailNext { get; set; }
 
+        /// <summary>The still size never arrives, as when ARKit sends no frame.</summary>
+        public bool NeverReady { get; set; }
+
         public TaskCompletionSource Hold() => _hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public async Task Idle(CaptureController controller)
@@ -197,8 +230,11 @@ public sealed class CaptureControllerTests : IAsyncDisposable
             while (controller.Status.Busy) await Task.Delay(5);
         }
 
-        public Task<StillFormat> GetStillFormatAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new StillFormat(W, H, FocalLengthMm: 26));
+        public async Task<StillFormat> GetStillFormatAsync(CancellationToken cancellationToken = default)
+        {
+            if (NeverReady) await Task.Delay(Timeout.Infinite, cancellationToken);
+            return new StillFormat(W, H, FocalLengthMm: 26);
+        }
 
         public async Task<CapturedStill> CaptureStillAsync(CancellationToken cancellationToken = default)
         {

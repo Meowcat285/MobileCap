@@ -36,12 +36,14 @@ public sealed class CaptureController : IAsyncDisposable
     private readonly Func<GeoLocation?>? _location;
     private readonly TimeProvider _time;
     private readonly CancellationTokenSource _stop = new();
+    private readonly CancellationTokenSource _startStop = new();
+    private readonly HashSet<int> _unwritten = [];
     private readonly Lock _gate = new();
     private readonly Lock _publishGate = new();
 
     private DeviceInfo _device;
     private SceneAutoCapture? _auto;
-    private Task? _inFlight;
+    private Task? _inFlight, _starting;
     private bool _finishing, _disposed;
     private bool _autoCapture = true;
     private HoldReason _hold = HoldReason.Warmup;
@@ -96,13 +98,25 @@ public sealed class CaptureController : IAsyncDisposable
 
     public event EventHandler<Exception>? StillFailed;
 
-    public async Task StartAsync(CancellationToken cancellationToken = default)
+    /// <summary>Starts AR and learns the still size; auto capture and the shutter wait for it.</summary>
+    public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        await _ar.StartAsync(cancellationToken).ConfigureAwait(false);
-        var format = await _stills.GetStillFormatAsync(cancellationToken).ConfigureAwait(false);
+        lock (_gate)
+        {
+            if (_finishing) throw new InvalidOperationException("The capture has ended.");
+            return _starting ??= StartCoreAsync(cancellationToken);
+        }
+    }
+
+    private async Task StartCoreAsync(CancellationToken cancellationToken)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _startStop.Token);
+        await _ar.StartAsync(linked.Token).ConfigureAwait(false);
+        var format = await _stills.GetStillFormatAsync(linked.Token).ConfigureAwait(false);
         (CaptureStatus, long) status;
         lock (_gate)
         {
+            if (_finishing) return;
             if (format.FocalLengthMm is { } mm) _device = _device with { FocalLengthMm = mm };
             _auto = new SceneAutoCapture(_settings, format.Width, format.Height);
             status = Next();
@@ -130,12 +144,15 @@ public sealed class CaptureController : IAsyncDisposable
     /// </summary>
     public async Task<CaptureRecord> FinishAsync()
     {
-        Task? pending;
+        Task? pending, starting;
         lock (_gate)
         {
             _finishing = true;
             pending = _inFlight;
+            starting = _starting;
         }
+        await _startStop.CancelAsync().ConfigureAwait(false);
+        await Quietly(starting).ConfigureAwait(false);
         if (pending is not null) await pending.ConfigureAwait(false);
         _ar.FrameUpdated -= OnFrame;
         await _ar.StopAsync().ConfigureAwait(false);
@@ -148,6 +165,12 @@ public sealed class CaptureController : IAsyncDisposable
         lock (_gate)
             record = _auto?.ToRecord(Name, StartedAt, _device)
                      ?? new CaptureRecord(Name, StartedAt, _device, _settings, [], []);
+        if (_unwritten.Count > 0)
+            record = record with
+            {
+                Shots = record.Shots.Where(s => !_unwritten.Contains(s.Index)).ToArray(),
+                Gaps = record.Gaps.Where(g => !_unwritten.Contains(g.Shot)).ToArray(),
+            };
         if (record.Shots.Count > 0) _folder.WriteSidecars(record);
         else if (Directory.Exists(_folder.Root)) Directory.Delete(_folder.Root, recursive: true);
         return record;
@@ -157,16 +180,33 @@ public sealed class CaptureController : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _ar.FrameUpdated -= OnFrame;
-        Task? pending;
+        Task? pending, starting;
         lock (_gate)
         {
             if (_disposed) return;
             _disposed = _finishing = true;
             pending = _inFlight;
+            starting = _starting;
         }
+        await _startStop.CancelAsync().ConfigureAwait(false);
         await _stop.CancelAsync().ConfigureAwait(false);
+        await Quietly(starting).ConfigureAwait(false);
         if (pending is not null) await pending.ConfigureAwait(false);
         _stop.Dispose();
+        _startStop.Dispose();
+    }
+
+    // Whoever called StartAsync sees its failure; finishing only needs it to be over.
+    private static async Task Quietly(Task? task)
+    {
+        if (task is null) return;
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch
+        {
+        }
     }
 
     private void OnFrame(object? sender, ArFrame frame)
@@ -215,12 +255,22 @@ public sealed class CaptureController : IAsyncDisposable
     }
 
     // Runs only while a still is in flight or after FinishAsync has waited for it, so image
-    // writes never overlap and land in file order.
+    // writes never overlap and land in file order. A shot whose image could not be written is
+    // left out of the sidecars, which must not name a missing file.
     private void Write(IReadOnlyList<KeptShot> kept)
     {
         foreach (var k in kept)
         {
-            _folder.WriteImage(k.Shot, k.Jpeg.Span, _device, _settings);
+            try
+            {
+                _folder.WriteImage(k.Shot, k.Jpeg.Span, _device, _settings);
+            }
+            catch (Exception e)
+            {
+                _unwritten.Add(k.Shot.Index);
+                StillFailed?.Invoke(this, e);
+                continue;
+            }
             ShotKept?.Invoke(this, k);
         }
     }
