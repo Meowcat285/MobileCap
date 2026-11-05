@@ -206,6 +206,31 @@ internal sealed class ArKitCapture : IArCapture, IArSession, IFrameSource
 
     private sealed class NativeViewHost(UIView view) : NativeControlHost
     {
+        private bool _attached;
+
+        // NativeControlHost re-places the view when its own or an ancestor's Bounds change, but
+        // not when a transform moves it (page slides, bar animations), which left the camera
+        // view over the HUD. Re-placing it every frame costs one frame assignment.
+        protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+        {
+            base.OnAttachedToVisualTree(e);
+            _attached = true;
+            Follow(TimeSpan.Zero);
+        }
+
+        protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+        {
+            _attached = false;
+            base.OnDetachedFromVisualTree(e);
+        }
+
+        private void Follow(TimeSpan _)
+        {
+            if (!_attached || TopLevel.GetTopLevel(this) is not { } top) return;
+            TryUpdateNativeControlPosition();
+            top.RequestAnimationFrame(Follow);
+        }
+
         protected override Avalonia.Platform.IPlatformHandle CreateNativeControlCore(
             Avalonia.Platform.IPlatformHandle parent) => new Avalonia.iOS.UIViewControlHandle(view);
 

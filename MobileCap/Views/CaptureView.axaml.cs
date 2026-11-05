@@ -19,6 +19,20 @@ public partial class CaptureView : ContentPage
     /// <summary>Saving failed; the photos already written stay in the folder.</summary>
     public event EventHandler<Exception>? Failed;
 
+    // NativeControlHost follows layout but not render transforms, so a native view attached
+    // while the page slides in stays where the slide left it. Show it once the page is in place.
+    protected override void OnNavigatedTo(NavigatedToEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        ArHost.IsVisible = true;
+    }
+
+    protected override void OnNavigatingFrom(NavigatingFromEventArgs e)
+    {
+        ArHost.IsVisible = false;
+        base.OnNavigatingFrom(e);
+    }
+
     protected override async void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);

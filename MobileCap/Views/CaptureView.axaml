@@ -20,7 +20,7 @@
                        TextWrapping="Wrap"
                        Text="{Binding Warning}" />
         </StackPanel>
-        <ContentControl Grid.Row="1" Content="{Binding ArView}" />
+        <ContentControl x:Name="ArHost" Grid.Row="1" IsVisible="False" Content="{Binding ArView}" />
         <Grid Grid.Row="2" Margin="16,8" ColumnDefinitions="*,Auto,*">
             <ToggleSwitch Grid.Column="0"
                           VerticalAlignment="Center"
