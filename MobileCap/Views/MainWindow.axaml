@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:MobileCap.Views"
+        x:Class="MobileCap.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="390" Height="844"
+        Title="MobileCap">
+    <PageNavigationHost>
+        <PageNavigationHost.Page>
+            <views:MainView />
+        </PageNavigationHost.Page>
+    </PageNavigationHost>
+</Window>

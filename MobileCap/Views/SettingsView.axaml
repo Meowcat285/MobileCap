@@ -1,0 +1,17 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MobileCap.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             Header="Settings"
+             x:DataType="vm:SettingsViewModel"
+             x:Class="MobileCap.Views.SettingsView">
+    <StackPanel Margin="16" Spacing="4">
+        <ToggleSwitch IsChecked="{Binding WriteGpsToExif}"
+                      Content="Write GPS location into photos" />
+        <TextBlock TextWrapping="Wrap"
+                   Opacity="0.7"
+                   Text="Off by default. When on, each photo's EXIF records where it was taken." />
+    </StackPanel>
+</ContentPage>
