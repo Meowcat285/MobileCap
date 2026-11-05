@@ -4,9 +4,10 @@ An iOS (and later Android) app for capturing photos for 3D reconstruction in
 [Spirula Studio](https://github.com/Meowcat285/spirula-studio). It tracks the phone with AR,
 takes sharp photos automatically, and exports a folder Spirula can open directly.
 
-Status: milestone 2 of 6 (core logic). The app launches and shows an empty capture list; the
-capture rules and exporters below are built and tested on desktop, and reach the phone in
-milestone 3.
+Status: milestone 3 of 6 (iOS AR). On an iPhone, New capture opens the camera with AR tracking,
+takes sharp photos automatically as you move, drops a marker where each was taken and warns about
+gaps. Finish writes the capture folder. Review and sharing as a .zip come in milestone 4; until
+then the folders are in the Files app under On My iPhone > MobileCap.
 
 ## Projects
 
@@ -15,7 +16,7 @@ milestone 3.
 | `MobileCap.Core` | Capture logic and the `IArSession` / `IFrameSource` interfaces. No platform code. |
 | `MobileCap.Core.Tests` | xUnit tests for Core, run on any desktop OS. |
 | `MobileCap` | Shared Avalonia UI (MVVM with CommunityToolkit.Mvvm). |
-| `MobileCap.iOS` | iOS head. ARKit lands here in milestone 3. Requires iOS 16. |
+| `MobileCap.iOS` | iOS head: ARKit session, full-resolution stills, marker trail (`ArKit/`). Requires iOS 16. |
 | `MobileCap.Android` | Android head. Builds in CI; ARCore support is a TODO. Requires API 26. |
 | `MobileCap.Desktop` | Desktop head for working on the UI without a phone. |
 
@@ -49,6 +50,11 @@ from the capture folder:
 ```sh
 spirula sfm auto images -o ws --manifest spirula_manifest.yaml --metric-positions metric_positions.txt
 ```
+
+On the phone, `CaptureController` drives this from the live ARKit session. Focus is locked for
+the whole capture, so one set of intrinsics fits every photo. Markers are green, yellow when the
+photo was kept blurry after three tries, and orange when it raised a gap warning. The shutter
+button takes a photo at any time; switch Auto off to shoot only by hand.
 
 The thresholds are first guesses until milestone 5 tunes them on real captures.
 

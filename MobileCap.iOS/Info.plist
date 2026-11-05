@@ -24,6 +24,10 @@
 	<string>MobileCap uses the camera and AR tracking to take photos for 3D reconstruction.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Only used when you turn on GPS in Settings, to record where each photo was taken.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

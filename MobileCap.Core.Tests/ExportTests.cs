@@ -162,6 +162,20 @@ public class ExportTests
     }
 
     [Fact]
+    public void Capture_json_finds_gap_shots_by_index_when_one_is_missing()
+    {
+        var shots = new[] { Shot(1, Vector3.UnitX), Shot(2, new Vector3(3, 0, 0)) };
+        var record = new CaptureRecord("capture_2026-11-05_1432", shots[0].TakenAt, Device, new CaptureSettings(),
+            shots, [new GapWarning(2, 1, 0.1)]);
+
+        using var doc = JsonDocument.Parse(CaptureJson.Write(record));
+
+        var gap = doc.RootElement.GetProperty("gaps")[0];
+        Assert.Equal("images/000003.jpg", gap.GetProperty("file").GetString());
+        Assert.Equal("images/000002.jpg", gap.GetProperty("nearest").GetString());
+    }
+
+    [Fact]
     public void Folder_zips_under_its_own_name_with_jpegs_stored()
     {
         var root = Path.Combine(Path.GetTempPath(), "mobilecap-test-" + Guid.NewGuid().ToString("N"), "capture_2026-11-05_1432");

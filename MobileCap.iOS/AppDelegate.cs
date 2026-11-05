@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.iOS;
 using Foundation;
+using MobileCap.iOS.ArKit;
 
 namespace MobileCap.iOS;
 
@@ -11,6 +12,7 @@ public partial class AppDelegate : AvaloniaAppDelegate<App>
 {
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
+        App.Ar = new ArKitPlatform();
         return base.CustomizeAppBuilder(builder)
             .WithInterFont();
     }

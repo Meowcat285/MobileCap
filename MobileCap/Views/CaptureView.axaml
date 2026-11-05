@@ -1,0 +1,44 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MobileCap.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             Header="{Binding Name}"
+             x:DataType="vm:CaptureViewModel"
+             x:Class="MobileCap.Views.CaptureView">
+    <!-- Avalonia cannot draw over the native AR view, so the HUD sits above and below it. -->
+    <Grid RowDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Row="0" Margin="16,8" Spacing="2">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" FontWeight="SemiBold" Text="{Binding Counts}" />
+                <TextBlock Grid.Column="1" Opacity="0.7" Text="{Binding Blur}" />
+            </Grid>
+            <TextBlock Text="{Binding Hint}" TextWrapping="Wrap" />
+            <TextBlock IsVisible="{Binding HasWarning}"
+                       Foreground="#E08A00"
+                       TextWrapping="Wrap"
+                       Text="{Binding Warning}" />
+        </StackPanel>
+        <ContentControl x:Name="ArHost" Grid.Row="1" IsVisible="False" Content="{Binding ArView}" />
+        <Grid Grid.Row="2" Margin="16,8" ColumnDefinitions="*,Auto,*">
+            <ToggleSwitch Grid.Column="0"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding AutoCapture}"
+                          OnContent="Auto"
+                          OffContent="Manual" />
+            <Button Grid.Column="1"
+                    Width="72" Height="72"
+                    CornerRadius="36"
+                    IsEnabled="{Binding CanShoot}"
+                    Click="ShutterButton_Click"
+                    AutomationProperties.Name="Shutter" />
+            <Button Grid.Column="2"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    IsEnabled="{Binding !IsFinishing}"
+                    Click="FinishButton_Click"
+                    Content="Finish" />
+        </Grid>
+    </Grid>
+</ContentPage>
