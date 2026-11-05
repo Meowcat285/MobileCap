@@ -171,6 +171,29 @@ public sealed class CaptureControllerTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Shots_after_a_failed_write_keep_their_file_names()
+    {
+        await _controller.StartAsync(TestContext.Current.CancellationToken);
+        Directory.CreateDirectory(_root);
+        var blocker = Path.Combine(_root, "images");
+        File.WriteAllText(blocker, "a file where the images folder goes");
+        _controller.AutoCapture = false;
+
+        Assert.True(_controller.Shutter());
+        await _stills.Idle(_controller);
+        File.Delete(blocker);
+        HoldStill(new Vector3(5, 0, 0));
+        Assert.True(_controller.Shutter());
+        await _stills.Idle(_controller);
+        var record = await _controller.FinishAsync();
+
+        var shot = Assert.Single(record.Shots);
+        Assert.Equal(1, shot.Index);
+        Assert.True(File.Exists(Path.Combine(_root, "images", shot.FileName)));
+        Assert.True(File.Exists(Path.Combine(_root, CaptureJson.FileName)));
+    }
+
+    [Fact]
     public async Task Finish_while_starting_cancels_the_start()
     {
         _stills.NeverReady = true;

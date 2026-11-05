@@ -169,7 +169,7 @@ public sealed class CaptureController : IAsyncDisposable
             record = record with
             {
                 Shots = record.Shots.Where(s => !_unwritten.Contains(s.Index)).ToArray(),
-                Gaps = record.Gaps.Where(g => !_unwritten.Contains(g.Shot)).ToArray(),
+                Gaps = record.Gaps.Where(g => !_unwritten.Contains(g.Shot) && !_unwritten.Contains(g.Nearest)).ToArray(),
             };
         if (record.Shots.Count > 0) _folder.WriteSidecars(record);
         else if (Directory.Exists(_folder.Root)) Directory.Delete(_folder.Root, recursive: true);

@@ -193,12 +193,14 @@ public static class CaptureJson
             }
             w.WriteEndArray();
 
+            // By shot index, not position: a shot whose image failed to write is not in the list.
+            var byIndex = capture.Shots.ToDictionary(s => s.Index);
             w.WriteStartArray("gaps");
             foreach (var g in capture.Gaps)
             {
                 w.WriteStartObject();
-                w.WriteString("file", "images/" + capture.Shots[g.Shot].FileName);
-                w.WriteString("nearest", "images/" + capture.Shots[g.Nearest].FileName);
+                w.WriteString("file", "images/" + byIndex[g.Shot].FileName);
+                w.WriteString("nearest", "images/" + byIndex[g.Nearest].FileName);
                 w.WriteNumber("overlap", Math.Round(g.Overlap, 3));
                 w.WriteEndObject();
             }
