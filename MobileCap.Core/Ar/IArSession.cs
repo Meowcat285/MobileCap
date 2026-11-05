@@ -21,7 +21,10 @@ public enum TrackingState
     Normal,
 }
 
-/// <param name="CameraToWorld">OpenGL camera convention (x right, y up, looking down -z), metres.</param>
+/// <param name="CameraToWorld">
+/// OpenGL camera convention (x right, y up, looking down -z), metres, in System.Numerics
+/// row-vector layout (position in M41 to M43). See <see cref="CameraPose"/>.
+/// </param>
 /// <param name="ExposureDuration">Seconds.</param>
 public sealed record ArFrame(
     TimeSpan Timestamp,

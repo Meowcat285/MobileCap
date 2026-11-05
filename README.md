@@ -4,7 +4,9 @@ An iOS (and later Android) app for capturing photos for 3D reconstruction in
 [Spirula Studio](https://github.com/Meowcat285/spirula-studio). It tracks the phone with AR,
 takes sharp photos automatically, and exports a folder Spirula can open directly.
 
-Status: milestone 1 of 6 (project skeleton). The app launches and shows an empty capture list.
+Status: milestone 2 of 6 (core logic). The app launches and shows an empty capture list; the
+capture rules and exporters below are built and tested on desktop, and reach the phone in
+milestone 3.
 
 ## Projects
 
@@ -16,6 +18,39 @@ Status: milestone 1 of 6 (project skeleton). The app launches and shows an empty
 | `MobileCap.iOS` | iOS head. ARKit lands here in milestone 3. Requires iOS 16. |
 | `MobileCap.Android` | Android head. Builds in CI; ARCore support is a TODO. Requires API 26. |
 | `MobileCap.Desktop` | Desktop head for working on the UI without a phone. |
+
+## How a capture works
+
+`MobileCap.Core` decides when to shoot and what to keep (`Capture/SceneAutoCapture.cs`):
+
+1. On every AR frame, fire only while tracking is normal, the predicted motion blur
+   (focal x angular speed x exposure, plus translation over an assumed 1.5 m depth) is under
+   0.7 px, and the phone is 0.3 m or 15 degrees from every kept shot.
+2. Score the still with the same edge-width measure and 64-bit difference hash as Spirula
+   (`app/FrameSharpness.h`, `app/FramePick.h`), against the capture's own sharpest shots.
+3. Keep it if sharp; retry if blurry, keeping the sharpest of three and flagging it; drop it if
+   it duplicates the last kept shot. A shot sharing under 60% of its view with every earlier one
+   raises a gap warning. The app never suggests where to stand.
+
+Each capture is a folder, shared as a .zip:
+
+```
+capture_2026-11-05_1432/
+  images/000001.jpg      sensor orientation, EXIF Orientation, Make/Model, 35 mm focal; GPS only if enabled
+  spirula_manifest.yaml  pinhole intrinsics from AR, one sequence in capture order
+  metric_positions.txt   image_name X Y Z, AR camera centres in metres
+  transforms.json        Nerfstudio layout with AR poses
+  capture.json           MobileCap's record: settings, blur scores, tries, gap warnings
+```
+
+Spirula's GUI opens the folder's `images/` as photos. For the AR intrinsics and metric scale, run
+from the capture folder:
+
+```sh
+spirula sfm auto images -o ws --manifest spirula_manifest.yaml --metric-positions metric_positions.txt
+```
+
+The thresholds are first guesses until milestone 5 tunes them on real captures.
 
 ## Building
 

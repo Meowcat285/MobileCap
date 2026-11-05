@@ -13,5 +13,7 @@ public class CaptureSettingsTests
         Assert.False(settings.WriteGpsToExif);
         Assert.Equal(0.3, settings.SceneSpacingMetres);
         Assert.Equal(15, settings.SceneSpacingDegrees);
+        Assert.Equal(0.7, settings.MotionBlurGatePx);
+        Assert.Equal(3, settings.MaxTries);
     }
 }
