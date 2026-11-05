@@ -53,7 +53,7 @@ jobs:
         with:
           global-json-file: global.json
       # Each iOS workload needs one Xcode version. GitHub's macOS images lag the newest
-      # workload, so pin a workload set whose iOS SDK (26.5) matches an installed Xcode.
-      - run: sudo xcode-select -s /Applications/Xcode_26.5.app && xcodebuild -version
+      # workload, so pin a workload set whose iOS SDK (26.5.10318) matches an installed Xcode (26.6).
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
       - run: dotnet workload install ios --version 10.0.401
       - run: dotnet build MobileCap.iOS -c Debug -r iossimulator-arm64
