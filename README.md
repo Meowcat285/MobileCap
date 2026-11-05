@@ -26,7 +26,9 @@ dotnet test --project MobileCap.Core.Tests
 dotnet run --project MobileCap.Desktop
 ```
 
-iOS needs a Mac with Xcode and the iOS workload (`dotnet workload install ios`). To run on an
+iOS needs a Mac with Xcode and the iOS workload (`dotnet workload install ios`). Each workload
+version requires one Xcode version; if the build says so, install that Xcode or pin an older
+workload (CI uses `dotnet workload install ios --version 10.0.401` with Xcode 26.5). To run on an
 iPhone connected to the Mac:
 
 ```sh
