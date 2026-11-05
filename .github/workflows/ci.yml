@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  core:
+    name: Core tests + desktop build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet test --project MobileCap.Core.Tests
+      - run: dotnet build MobileCap.Desktop -c Release
+
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: dotnet workload restore MobileCap.Android/MobileCap.Android.csproj
+      - run: dotnet build MobileCap.Android -c Release
+      - uses: actions/upload-artifact@v5
+        with:
+          name: mobilecap-android
+          path: MobileCap.Android/bin/Release/net10.0-android/*-Signed.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS build (simulator, unsigned)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: xcodebuild -version
+      - run: dotnet workload restore MobileCap.iOS/MobileCap.iOS.csproj
+      - run: dotnet build MobileCap.iOS -c Debug -r iossimulator-arm64

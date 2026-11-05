@@ -1,0 +1,31 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MobileCap.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             Header="Captures"
+             x:DataType="vm:CapturesViewModel"
+             x:Class="MobileCap.Views.CapturesView">
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8">
+            <Button HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    IsEnabled="False"
+                    Content="New capture" />
+            <Button HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Click="SettingsButton_Click"
+                    Content="Settings" />
+        </StackPanel>
+        <Grid>
+            <TextBlock IsVisible="{Binding HasNoCaptures}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Text="No captures yet." />
+            <ListBox IsVisible="{Binding !HasNoCaptures}" ItemsSource="{Binding Captures}" />
+        </Grid>
+    </DockPanel>
+</ContentPage>

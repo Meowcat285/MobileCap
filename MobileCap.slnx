@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="MobileCap.Core/MobileCap.Core.csproj" />
+  <Project Path="MobileCap.Core.Tests/MobileCap.Core.Tests.csproj" />
+  <Project Path="MobileCap/MobileCap.csproj" />
+  <Project Path="MobileCap.Desktop/MobileCap.Desktop.csproj" />
+  <Project Path="MobileCap.iOS/MobileCap.iOS.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="MobileCap.Android/MobileCap.Android.csproj">
+    <Deploy />
+  </Project>
+</Solution>
